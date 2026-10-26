@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Global Footnotes</title>
+<meta name="description" content="세계 곳곳의 20대를 직접 만나 불안과 꿈을 묻고, 한 사람이 고른 모국어 한 문장과 함께 지구 위에 기록합니다. 지금의 인물은 모두 예시입니다.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Global Footnotes">
+<meta property="og:description" content="세계 20대의 불안과 꿈, 그리고 각자 고른 한 문장. (현재는 예시 인물)">
+<meta name="theme-color" content="#eceee8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;600&family=Caveat:wght@500&family=Nanum+Pen+Script&display=swap">
+<style>
+/* 레이아웃: 한 화면 앱. 지구가 무대, 카탈로그(나라·불안·꿈)는 폰에선 아래 서랍·컴터에선 왼쪽 단. 사람을 열면 폰은 아래에서, 컴터는 오른쪽에서 그 사람의 면이 올라온다. 페이지는 스크롤하지 않는다. */
+:root {
+  --paper: #eceee8;      /* 차가운 회녹 종이 */
+  --ink: #1c2433;        /* 남먹 */
+  --ink-soft: #4f5868;
+  --rule: #b7bdbf;
+  --mag: #ad2366;        /* 인쇄 마젠타: 사람이 있는 자리와 여정 선에만 */
+  --serif: 'Hahmlet', 'Noto Serif KR', 'AppleMyungjo', 'Batang', serif;
+  --hand-ko: 'Nanum Pen Script', 'Caveat', cursive;
+  --leafW: min(560px, 42vw);
+  --ease: cubic-bezier(.22, .61, .36, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #121722; --ink: #e3e6e0; --ink-soft: #a5acb7; --rule: #3a4253; --mag: #ea72aa; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #121722; --ink: #e3e6e0; --ink-soft: #a5acb7; --rule: #3a4253; --mag: #ea72aa; color-scheme: dark; }
+
+html, body { height: 100%; background: var(--paper); }
+body { margin: 0; overflow: hidden; color: var(--ink); font-family: var(--serif); font-size: 16px; line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--mag); outline-offset: 3px; }
+
+.app {
+  position: relative; height: 100%; display: grid;
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "head" "stage" "cat";
+}
+
+/* 머리 — 제호(괘선이 먼저 그어지고 제호가 앉는다: originkit Masthead Reveal 구조를 slow 로) */
+.head { grid-area: head; padding: 14px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); transition: opacity 900ms var(--ease); }
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.brand h1 { margin: 0; min-width: 0; overflow-wrap: normal; font-weight: 600; font-size: 30px; line-height: 1.1; letter-spacing: -.02em; animation: settle 1200ms var(--ease) .4s both; }
+.lang { display: flex; gap: 12px; font-size: 14.5px; color: var(--ink-soft); flex: none; }
+.lang button { padding-block: 6px; }
+.lang button[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.head .rule { height: 1px; background: var(--ink); margin-top: 8px; transform-origin: left; animation: draw 1600ms var(--ease) both; }
+.lede { margin: 10px 0 0; font-size: 15px; line-height: 1.6; text-wrap: pretty; animation: settle 1200ms var(--ease) .9s both; }
+.lede .demo { display: block; margin-top: 4px; color: var(--ink-soft); font-size: 14px; }
+@keyframes draw { from { transform: scaleX(0); } }
+@keyframes settle { from { opacity: 0; } }
+
+/* 무대 */
+.stage { grid-area: stage; position: relative; display: grid; place-items: center; min-height: 0; overflow: hidden; transition: padding 900ms var(--ease); }
+#globe { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; cursor: grab; touch-action: none; }
+#globe.drag { cursor: grabbing; }
+.hint { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 6px; margin: 0; font-size: 14px; color: var(--ink-soft); transition: opacity 1200ms var(--ease); pointer-events: none; }
+.hint.gone { opacity: 0; }
+
+/* 카탈로그 */
+.cat { grid-area: cat; background: var(--paper); border-top: 1px solid var(--rule); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 5; }
+.tabs { display: flex; align-items: center; gap: 20px; min-height: 52px; white-space: nowrap; }
+.tabs [role="tab"] { flex: none; padding-block: 10px; font-size: 16px; color: var(--ink-soft); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--mag); text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.tabs .count { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: right; font-size: 14px; color: var(--ink-soft); }
+#catToggle { flex: none; font-size: 14.5px; padding-block: 10px; text-decoration: underline; text-underline-offset: 4px; }
+.catbody { display: none; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 20px; }
+.cat.open .catbody { display: block; }
+.filter { margin: 2px 0 10px; font-size: 14.5px; color: var(--ink-soft); }
+.filter button { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+#catList { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); }
+#catList li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; column-gap: 14px; padding-block: 9px; border-bottom: 1px solid var(--rule); transition: opacity 900ms var(--ease); }
+#catList li:last-child { border-bottom: 0; }
+#catList li.off { opacity: .3; }
+.term { text-align: left; font-weight: 600; align-self: start; white-space: nowrap; }
+.term .n { font-weight: 400; color: var(--ink-soft); font-size: 14px; margin-left: 4px; }
+.term[aria-pressed="true"] { text-decoration: underline; text-decoration-color: var(--mag); text-underline-offset: 5px; }
+.people { display: flex; flex-wrap: wrap; gap: 2px 14px; }
+.people a { text-decoration: none; padding-block: 2px; white-space: nowrap; }
+.people a:hover, .people a:focus-visible { text-decoration: underline; text-decoration-color: var(--mag); text-underline-offset: 4px; }
+.people .where { color: var(--ink-soft); font-size: 14px; }
+
+.colophon { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.colophon h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.colophon p { margin: 4px 0 10px; font-size: 14.5px; color: var(--ink-soft); }
+#letter { display: grid; gap: 10px; }
+#letter .row { display: flex; gap: 16px; align-items: end; flex-wrap: wrap; }
+#email { flex: 1 1 200px; min-width: 0; font: inherit; font-size: 16px; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--ink); padding: 8px 0; border-radius: 0; }
+#email::placeholder { color: var(--ink-soft); opacity: .7; }
+#send { padding: 8px 0; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--mag); font-weight: 600; }
+#letter label { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+#consent { margin-top: 3px; accent-color: var(--mag); width: 16px; height: 16px; flex: none; }
+#msg { min-height: 1.4em; font-size: 14.5px; }
+#msg.err { color: var(--mag); }
+.fine { font-size: 14px; color: var(--ink-soft); margin: 14px 0 0; }
+
+/* 폰: 서랍을 펼치면 무대 위로 올라온다 */
+@media (max-width: 899px) {
+  .cat { position: relative; }
+  .cat.open .catbody { position: absolute; left: 0; right: 0; bottom: 100%; max-height: 60vh; max-height: 60dvh; background: var(--paper); border-top: 1px solid var(--rule); padding: 12px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)); box-shadow: 0 -18px 30px -24px rgba(0, 0, 0, .35); }
+}
+
+/* 사람의 면 */
+#leaf { position: fixed; z-index: 20; background: var(--paper); overflow-y: auto; overscroll-behavior: contain; opacity: 0; transition: opacity 900ms var(--ease); padding-bottom: env(safe-area-inset-bottom, 0px); }
+#leaf.on { opacity: 1; }
+.lbar { position: sticky; top: 0; z-index: 1; background: var(--paper); display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; justify-content: space-between; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--rule); font-size: 15px; }
+.lbar button { padding-block: 6px; min-height: 32px; white-space: nowrap; }
+.lbar button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.lnav { display: flex; gap: 18px; }
+#lfCtx { color: var(--ink-soft); font-size: 14px; }
+.lbody { padding: 22px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); transition: opacity 500ms var(--ease); }
+.lbody.swap { opacity: 0; }
+.lhead { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 14px; align-items: start; }
+#lfName { margin: 0; font-size: 32px; line-height: 1.1; font-weight: 600; letter-spacing: -.02em; }
+#lfMeta { margin: 6px 0 0; font-size: 14.5px; color: var(--ink-soft); }
+.portrait { margin: 0; }
+#lfPic { display: block; width: 84px; height: 84px; }
+.portrait figcaption { text-align: center; white-space: nowrap; font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+#lfOrig { margin: 24px 0 0; font-size: clamp(36px, 9vw, 54px); line-height: 1.18; text-wrap: balance; }
+#lfTr { margin: 8px 0 0; font-style: italic; color: var(--ink-soft); }
+#lfWhy { margin: 18px 0 0; padding-left: 14px; border-left: 1px solid var(--mag); }
+.qa { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 20px; }
+.qa .q { display: block; font-style: italic; color: var(--ink-soft); font-size: 15px; }
+.qa .a { display: block; margin-top: 3px; }
+#lfTags { margin: 30px 0 0; font-size: 15px; }
+#lfTags button { text-decoration: underline; text-decoration-color: var(--mag); text-underline-offset: 4px; }
+#lfNote { margin: 12px 0 0; font-size: 14px; color: var(--ink-soft); }
+
+@media (max-width: 899px) {
+  #leaf { left: 0; right: 0; bottom: 0; top: 38%; border-top: 1px solid var(--rule); }
+  .app.reading .head, .app.reading .cat { opacity: 0; pointer-events: none; }
+  .app.reading .stage { grid-area: auto; position: absolute; inset: 0 0 62% 0; padding-top: env(safe-area-inset-top, 0px); }
+}
+
+/* 컴터: 왼쪽 단(머리+카탈로그) / 오른쪽 무대 */
+@media (min-width: 900px) {
+  .app { grid-template-columns: 400px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "head stage" "cat stage"; }
+  .head { padding: 32px 28px 0 max(28px, env(safe-area-inset-left, 0px)); }
+  .brand h1 { font-size: 40px; }
+  .lede { font-size: 16px; }
+  .cat { border-top: 0; display: flex; flex-direction: column; min-height: 0; padding: 12px 28px 0 max(28px, env(safe-area-inset-left, 0px)); }
+  .cat .catbody { display: block; flex: 1 1 auto; min-height: 0; }
+  #catToggle { display: none; }
+  .tabs { border-bottom: 1px solid var(--rule); }
+  #leaf { top: 0; bottom: 0; right: 0; width: var(--leafW); border-left: 1px solid var(--rule); }
+  .app.reading .stage { padding-right: var(--leafW); }
+  .lbar, .lbody { padding-left: 32px; padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+  .lhead { grid-template-columns: minmax(0, 1fr) 104px; }
+  #lfPic { width: 104px; height: 104px; }
+  #lfName { font-size: 38px; }
+  .hint { left: 28px; bottom: 20px; }
+}
+@media (max-height: 640px) and (max-width: 899px) { .lede .demo { display: none; } }
+@media (max-width: 599px) { html[lang="en"] .tabs .count:not(.on) { display: none; } }
+@media (max-width: 359px) { .tabs { gap: 14px; } .tabs [role="tab"] { font-size: 15px; } .brand h1 { font-size: 26px; } }
+
+#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; background: var(--ink); color: var(--paper); padding: 8px 14px; font-size: 15px; opacity: 0; transition: opacity 600ms var(--ease); pointer-events: none; max-width: calc(100% - 32px); }
+#toast.on { opacity: 1; }
+
+/* 종이 결 — film-grain-overlay 레시피 */
+.grain { position: fixed; inset: 0; pointer-events: none; z-index: 40; background-image: var(--grain, none); opacity: .07; mix-blend-mode: multiply; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .grain { mix-blend-mode: screen; opacity: .05; } }
+:root[data-theme="dark"] .grain { mix-blend-mode: screen; opacity: .05; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="app" id="app">
+  <header class="head">
+    <div class="brand"><h1>Global Footnotes</h1><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ko" aria-pressed="false">한국어</button><button type="button" data-lang="en" aria-pressed="false">English</button></div></div>
+    <div class="rule" aria-hidden="true"></div>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="globe" role="img" aria-label=""></canvas>
+    <p class="hint" id="hint"></p>
+  </div>
+
+  <section class="cat" id="cat">
+    <div class="tabs">
+      <span role="tablist" style="display:contents">
+        <button type="button" role="tab" id="tab-country" data-ax="country" aria-selected="true"></button>
+        <button type="button" role="tab" id="tab-tag" data-ax="tag" aria-selected="false"></button>
+        <button type="button" role="tab" id="tab-dream" data-ax="dream" aria-selected="false"></button>
+      </span>
+      <span class="count" id="count"></span>
+      <button type="button" id="catToggle" aria-expanded="false" aria-controls="catBody"></button>
+    </div>
+    <div class="catbody" id="catBody" role="tabpanel">
+      <p class="filter" id="filter" hidden></p>
+      <ul id="catList"></ul>
+      <footer class="colophon">
+        <h2 id="letH"></h2>
+        <p id="letP"></p>
+        <form id="letter" novalidate>
+          <div class="row">
+            <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" aria-labelledby="letH">
+            <button type="submit" id="send"></button>
+          </div>
+          <label for="consent"><input type="checkbox" id="consent"><span id="consentT"></span></label>
+          <div id="msg" aria-live="polite"></div>
+        </form>
+        <p class="fine" id="fine"></p>
+        <p class="fine"><a id="pf" href="https://euichanlee0608-svg.github.io/" target="_blank" rel="noopener"></a></p>
+      </footer>
+    </div>
+  </section>
+</div>
+
+<article id="leaf" hidden aria-labelledby="lfName" role="dialog">
+  <nav class="lbar">
+    <button type="button" id="lfClose"></button>
+    <span class="lnav"><button type="button" id="lfPrev"></button><button type="button" id="lfNext"></button><button type="button" id="lfShare"></button></span>
+  </nav>
+  <div class="lbody" id="lbody">
+    <div class="lhead">
+      <div><p id="lfCtx"></p><h2 id="lfName"></h2><p id="lfMeta"></p></div>
+      <figure class="portrait"><canvas id="lfPic" width="208" height="208"></canvas><figcaption id="lfPicCap"></figcaption></figure>
+    </div>
+    <blockquote id="lfOrig"></blockquote>
+    <p id="lfTr"></p>
+    <p id="lfWhy"></p>
+    <ol class="qa" id="lfQA"></ol>
+    <p id="lfTags"></p>
+    <p id="lfNote"></p>
+  </div>
+</article>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="data.js"></script>
+<script src="land.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const ARTIFACT_URL = 'https://claude.ai/artifact/BoUDYcWyg8nUEE7LADhxJV';   // 아티팩트판 공유 주소. 실제 사이트에서는 location 을 쓴다
+// 사람의 순서는 만난 순서 — 번호를 보이지 않고, 위아래를 만들지 않는다
+const PEOPLE = STARS.slice().sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+
+const KO = {
+  city: { 'Seoul': '서울', 'Berlin': '베를린', 'São Paulo': '상파울루', 'Kyoto': '교토', 'Cairo': '카이로', 'Helsinki': '헬싱키', 'Los Angeles': '로스앤젤레스', 'Hanoi': '하노이', 'Nairobi': '나이로비', 'Mexico City': '멕시코시티', 'Sydney': '시드니', 'Reykjavik': '레이캬비크', 'Busan': '부산', 'Tokyo': '도쿄' },
+  country: { 'South Korea': '대한민국', 'Germany': '독일', 'Brazil': '브라질', 'Japan': '일본', 'Egypt': '이집트', 'Finland': '핀란드', 'USA': '미국', 'Vietnam': '베트남', 'Kenya': '케냐', 'Mexico': '멕시코', 'Australia': '호주', 'Iceland': '아이슬란드' }
+};
+const S = {
+  ko: {
+    lede: '세계 곳곳의 20대를 직접 만나 요즘의 불안과 그 불안을 마주하는 방법을 묻고, 한 사람이 고른 모국어 한 문장과 함께 지구 위에 적어 둡니다.<span class="demo">첫 인터뷰 전이라 지금의 사람들은 모두 예시예요.</span>',
+    count: (n, k) => `${k}개 나라, ${n}명`, only: (t, n) => `‘${t}’ ${n}명만`,
+    hint: '끌어서 돌리고, 점을 눌러 보세요.',
+    globe: '사람들을 만난 도시가 점으로 찍힌 점묘 지구',
+    tabs: { country: '나라', tag: '불안', dream: '꿈' },
+    open: '펼치기', shut: '접기',
+    filter: t => `‘${t}’에 해당하는 사람만 또렷하게 보는 중이에요. `, all: '모두 보기',
+    letH: '편지 받기', letP: '새로운 사람이 서너 명 모일 때마다 짧은 편지를 보내요.',
+    send: '편지 받기', consent: '이메일은 이 프로젝트 소식에만 쓰이고, 편지 아래 링크로 언제든 그만 받을 수 있어요.',
+    mEmail: '이메일 주소를 다시 확인해 주세요.', mConsent: '안내에 동의해 주셔야 보낼 수 있어요.',
+    mSoon: '편지는 첫 인터뷰와 함께 시작해요. 아직 이메일을 어디에도 보내지 않았어요.',
+    fine: '각 문답은 녹취 원문이 아니라, 대화를 바탕으로 정리한 글이에요.', pf: '전체 포트폴리오 보기 →',
+    close: '← 지구로', prev: '이전', next: '다음', share: '링크 복사', copied: '이 사람의 링크를 복사했어요', copyFail: '복사가 막혀 있어요. 주소: ',
+    ctx: (t, i, n) => n > 1 ? `${t} · ${n}명 가운데 ${i}번째로 보는 중` : t,
+    meta: d => `${d.age}세 · ${KO.city[d.city] || d.city}, ${KO.country[d.country] || d.country} · ${d.date.slice(0, 4)}년 ${+d.date.slice(5)}월에 만남`,
+    pic: '셀카 그림 자리',
+    tags: ['불안은 ', '§A', ', 꿈은 ', '§B', ' 쪽에 모아 두었어요.'],
+    note: '대화를 바탕으로 정리한 문답이에요. 지금은 예시 인물이에요.',
+    city: d => KO.city[d.city] || d.city, country: c => KO.country[c] || c
+  },
+  en: {
+    lede: 'I meet people in their twenties around the world, ask what makes them anxious these days and how they face it, and place them on the globe with one sentence each person picks in their own language.<span class="demo">The first interview hasn’t happened yet, so everyone here is an example.</span>',
+    count: (n, k) => `${n} people, ${k} countries`, only: (t, n) => `${t} · ${n}`,
+    hint: 'Drag to turn. Tap a dot.',
+    globe: 'A stippled globe with dots on the cities where people were met',
+    tabs: { country: 'Countries', tag: 'Anxieties', dream: 'Dreams' },
+    open: 'Open', shut: 'Close',
+    filter: t => `Showing only people under ${t}. `, all: 'Show everyone',
+    letH: 'Letters', letP: 'Each time three or four new people join, you get a short letter.',
+    send: 'Send me letters', consent: 'Your email is only used for these letters. Every letter has a link to stop them.',
+    mEmail: 'Please check the email address.', mConsent: 'Please agree to the note first.',
+    mSoon: 'Letters start with the first interview. Your email has not been sent anywhere.',
+    fine: 'Each Q&A is edited from conversation, not a verbatim transcript.', pf: 'See the full portfolio →',
+    close: '← Globe', prev: 'Prev', next: 'Next', share: 'Copy link', copied: 'Link to this person copied', copyFail: 'Copying is blocked here. Link: ',
+    ctx: (t, i, n) => n > 1 ? `${t} · ${i} of ${n}` : t,
+    meta: d => `${d.age} · ${d.city}, ${d.country} · met ${new Date(d.date.replace('.', '-') + '-15').toLocaleString('en', { month: 'long', year: 'numeric' })}`,
+    pic: 'Selfie to come',
+    tags: ['Gathered under ', '§A', ' for anxiety and ', '§B', ' for dreams.'],
+    note: 'Edited from conversation. This person is an example for now.',
+    city: d => d.city, country: c => c
+  }
+};
+
+let lang = (() => { try { const s = localStorage.getItem('gf-lang'); if (s === 'ko' || s === 'en') return s; } catch (e) {} return (navigator.language || 'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en'; })();
+const T = () => S[lang];
+const lab = (axis, v) => axis === 'country' ? T().country(v) : (lang === 'en' ? (LABELS_EN[v] || v) : v);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const handFont = d => `${d.font}, var(--hand-ko)`;
+const isKo = s => /[가-힣]/.test(s);
+const trFor = d => (d.original === d.english || (lang === 'ko' && isKo(d.original))) ? '' : d.english;
+const app = $('app'), wide = matchMedia('(min-width: 900px)');
+
+/* ---------- 상태 ---------- */
+let axis = 'country';          // 카탈로그를 묶는 기준
+let filter = null;             // { axis, v } — 고른 항목만 또렷하게
+let cur = null;                // { list, i, title }
+let hoverKey = null;           // 카탈로그에서 가리킨 나라
+
+const groupsOf = ax => {
+  const m = new Map();
+  PEOPLE.forEach(d => { const k = ax === 'country' ? d.country : d[ax]; if (!k) return; if (!m.has(k)) m.set(k, []); m.get(k).push(d); });
+  return [...m].sort((a, b) => b[1].length - a[1].length || lab(ax, a[0]).localeCompare(lab(ax, b[0])));
+};
+const keyOf = (d, ax) => ax === 'country' ? d.country : d[ax];
+const matches = d => !filter || keyOf(d, filter.axis) === filter.v;
+
+/* ---------- 본문 ---------- */
+function renderStatic() {
+  document.documentElement.lang = lang;
+  $('lede').innerHTML = T().lede;
+  $('count').textContent = T().count(PEOPLE.length, new Set(PEOPLE.map(d => d.country)).size);
+  $('hint').textContent = T().hint;
+  $('globe').setAttribute('aria-label', T().globe);
+  ['country', 'tag', 'dream'].forEach(a => $('tab-' + a).textContent = T().tabs[a]);
+  $('letH').textContent = T().letH; $('letP').textContent = T().letP; $('send').textContent = T().send;
+  $('consentT').textContent = T().consent; $('fine').textContent = T().fine; $('pf').textContent = T().pf;
+  $('lfClose').textContent = T().close; $('lfPrev').textContent = T().prev; $('lfNext').textContent = T().next; $('lfShare').textContent = T().share;
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  $('msg').textContent = ''; $('msg').className = '';
+  setToggle(); renderCatalog();
+  if (cur) fillLeaf(false);
+}
+
+function renderCatalog() {
+  document.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ax === axis)));
+  $('catList').innerHTML = groupsOf(axis).map(([k, ps]) => {
+    const on = filter && filter.axis === axis && filter.v === k;
+    return `<li data-k="${esc(k)}"><button type="button" class="term" data-v="${esc(k)}" aria-pressed="${!!on}">${esc(lab(axis, k))}<span class="n">${ps.length}</span></button><span class="people">${ps.map(d =>
+      `<a href="#p${d.id}" data-open="${d.id}">${esc(d.name)}${axis === 'country' ? ` <span class="where">${esc(T().city(d))}</span>` : ` <span class="where">${esc(T().country(d.country))}</span>`}</a>`).join('')}</span></li>`;
+  }).join('');
+  applyFilter();
+}
+function applyFilter() {
+  document.querySelectorAll('#catList li').forEach(li => {
+    const ps = groupsOf(axis).find(([k]) => k === li.dataset.k)[1];
+    li.classList.toggle('off', !!filter && !ps.some(matches));
+  });
+  const f = $('filter');
+  if (filter) { f.hidden = false; f.innerHTML = esc(T().filter(lab(filter.axis, filter.v))) + `<button type="button" id="clear">${esc(T().all)}</button>`; $('clear').onclick = () => setFilter(null); }
+  else f.hidden = true;
+  const n = PEOPLE.length, k = new Set(PEOPLE.map(d => d.country)).size;
+  $('count').textContent = filter ? T().only(lab(filter.axis, filter.v), PEOPLE.filter(matches).length) : T().count(n, k);
+  $('count').classList.toggle('on', !!filter);
+}
+function setFilter(fl) {
+  filter = fl && filter && fl.axis === filter.axis && fl.v === filter.v ? null : fl;
+  renderCatalog();
+  if (filter && filter.axis === 'country') { const ps = PEOPLE.filter(matches); focusGlobe(mean(ps), false); }
+}
+const mean = ps => ({ lon: d3.mean(ps, d => d.lon), lat: d3.mean(ps, d => d.lat) });
+
+function setToggle() { const open = $('cat').classList.contains('open'); $('catToggle').textContent = open ? T().shut + ' ↓' : T().open + ' ↑'; $('catToggle').setAttribute('aria-expanded', String(open)); }
+function openCat(v) { $('cat').classList.toggle('open', v); setToggle(); }
+$('catToggle').onclick = () => openCat(!$('cat').classList.contains('open'));
+document.querySelectorAll('[role="tab"]').forEach(b => b.onclick = () => { axis = b.dataset.ax; renderCatalog(); if (!wide.matches) openCat(true); $('catBody').scrollTop = 0; });
+
+document.addEventListener('click', e => {
+  const o = e.target.closest('[data-open]');
+  if (o) { e.preventDefault(); const d = STARS.find(x => x.id === +o.dataset.open); openPerson(d, listFor(d)); return; }
+  const t = e.target.closest('.term');
+  if (t) { setFilter({ axis, v: t.dataset.v }); if (!wide.matches && filter) openCat(false); }   // 폰: 고르면 서랍을 접어 지구에서 보이게
+});
+document.querySelector('.lang').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  lang = b.dataset.lang; try { localStorage.setItem('gf-lang', lang); } catch (err) {}
+  renderStatic();
+});
+$('catList').addEventListener('pointerover', e => { const li = e.target.closest('li'); hoverKey = li && axis === 'country' ? li.dataset.k : null; });
+$('catList').addEventListener('pointerleave', () => { hoverKey = null; });
+
+/* 넘겨 볼 목록: 고른 항목이 있고 그 사람이 해당하면 그 항목, 아니면 같은 나라 사람들 */
+function listFor(d) {
+  if (filter && matches(d)) return { list: PEOPLE.filter(matches), title: lab(filter.axis, filter.v) };
+  return { list: PEOPLE.filter(p => p.country === d.country), title: T().country(d.country) };
+}
+
+/* ---------- 사람의 면 ---------- */
+const leaf = $('leaf');
+function openPerson(d, l) {
+  const was = !!cur;
+  cur = { list: l.list, i: l.list.indexOf(d), title: l.title };
+  app.classList.add('reading');
+  if (!was) { leaf.hidden = false; requestAnimationFrame(() => leaf.classList.add('on')); fillLeaf(false); leaf.scrollTop = 0; $('lfClose').focus({ preventScroll: true }); }
+  else fillLeaf(true);
+  try { history.replaceState(null, '', '#p' + d.id); } catch (e) {}
+  focusGlobe(d, true); hideHint();
+}
+function closeLeaf() {
+  if (!cur) return;
+  cur = null; leaf.classList.remove('on'); app.classList.remove('reading');
+  setTimeout(() => { if (!cur) leaf.hidden = true; }, 900);
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  held = false;
+}
+function step(k) { if (!cur) return; const n = cur.list.length; const d = cur.list[(cur.i + k + n) % n]; openPerson(d, { list: cur.list, title: cur.title }); }
+
+function fillLeaf(animate) {
+  const body = $('lbody');
+  const put = () => {
+    const d = cur.list[cur.i], n = cur.list.length, en = lang === 'en';
+    $('lfCtx').textContent = T().ctx(cur.title, cur.i + 1, n);
+    $('lfPrev').hidden = $('lfNext').hidden = n < 2;
+    $('lfName').textContent = d.name;
+    $('lfMeta').textContent = T().meta(d);
+    $('lfOrig').textContent = d.original; $('lfOrig').style.fontFamily = handFont(d);
+    const tr = trFor(d); $('lfTr').textContent = tr; $('lfTr').hidden = !tr;
+    $('lfWhy').textContent = en ? d.en.why : d.why;
+    const qa = en ? d.en.qa : d.qa;
+    $('lfQA').innerHTML = QUESTIONS.map((q, j) => `<li><span class="q">${esc(en ? q.en : q.ko)}</span><span class="a">${esc(qa[j])}</span></li>`).join('');
+    $('lfTags').innerHTML = T().tags.map(p => p === '§A' ? `<button type="button" data-term="tag">${esc(lab('tag', d.tag))}</button>` : p === '§B' ? `<button type="button" data-term="dream">${esc(lab('dream', d.dream))}</button>` : esc(p)).join('');
+    $('lfTags').querySelectorAll('[data-term]').forEach(b => b.onclick = () => { const ax = b.dataset.term; axis = ax; filter = null; closeLeaf(); setFilter({ axis: ax, v: d[ax] }); if (!wide.matches) openCat(true); });
+    $('lfNote').textContent = T().note;
+    $('lfPicCap').textContent = T().pic;
+    drawPortrait(d);
+  };
+  if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { put(); return; }
+  body.classList.add('swap');
+  setTimeout(() => { put(); leaf.scrollTop = 0; body.classList.remove('swap'); }, 500);
+}
+
+$('lfClose').onclick = closeLeaf;
+$('lfPrev').onclick = () => step(-1);
+$('lfNext').onclick = () => step(1);
+$('lfShare').onclick = async () => {
+  const d = cur.list[cur.i];
+  const url = `${/github\.io$/.test(location.hostname) ? location.origin + location.pathname : ARTIFACT_URL}#p${d.id}`;
+  try { await navigator.clipboard.writeText(url); toast(T().copied); }
+  catch (e) { toast(T().copyFail + url); }
+};
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (cur) closeLeaf(); else if ($('cat').classList.contains('open')) openCat(false); }
+  else if (cur && e.key === 'ArrowRight') step(1);
+  else if (cur && e.key === 'ArrowLeft') step(-1);
+});
+(() => { let x0 = null, y0 = 0;
+  leaf.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  leaf.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) step(dx < 0 ? 1 : -1); }, { passive: true });
+})();
+let toastT; function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2600); }
+
+$('letter').addEventListener('submit', e => {
+  e.preventDefault();
+  const m = $('msg'), v = $('email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { m.textContent = T().mEmail; m.className = 'err'; return; }
+  if (!$('consent').checked) { m.textContent = T().mConsent; m.className = 'err'; return; }
+  m.textContent = T().mSoon; m.className = '';
+});
+
+/* ---------- 색 토큰 ---------- */
+let C = {};
+function readColors() { const cs = getComputedStyle(document.documentElement); ['--paper', '--ink', '--ink-soft', '--mag', '--rule'].forEach(k => C[k.slice(2)] = cs.getPropertyValue(k).trim()); }
+readColors();
+const recolor = () => { readColors(); if (cur) drawPortrait(cur.list[cur.i]); };
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
+new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+/* ---------- 점묘 지구 — 레시피 stipple-land-globe (originkit Globe Study 구조) ---------- */
+const cv = $('globe'), g = cv.getContext('2d'), stage = $('stage');
+const RAD = Math.PI / 180;
+const land = topojson.feature(LAND, LAND.objects.land);
+const DOTS = (() => {
+  const w = 1440, h = 720, oc = document.createElement('canvas'); oc.width = w; oc.height = h;
+  const c = oc.getContext('2d', { willReadFrequently: true });
+  const pr = d3.geoEquirectangular().scale(w / (2 * Math.PI)).translate([w / 2, h / 2]);
+  c.fillStyle = '#000'; c.beginPath(); d3.geoPath(pr, c)(land); c.fill();
+  const px = c.getImageData(0, 0, w, h).data, out = [], S = 1.45;
+  for (let lat = -57; lat <= 83; lat += S) {
+    const st = S / Math.max(.18, Math.cos(lat * RAD)), off = (Math.round(lat / S) % 2) * st / 2;
+    for (let lon = -180 + off; lon < 180; lon += st) {
+      const [x, y] = pr([lon, lat]);
+      if (px[((y | 0) * w + (x | 0)) * 4 + 3] > 127) out.push(lon * RAD, Math.cos(lat * RAD), Math.sin(lat * RAD));
+    }
+  }
+  return new Float32Array(out);
+})();
+const proj = d3.geoOrthographic().clipAngle(90).precision(.4);
+const path = d3.geoPath(proj, g);
+const grat = d3.geoGraticule().step([30, 30])();
+
+// 도시 = 점, 나라 = 이름표(사람들 위치의 평균)
+const CITIES = (() => { const m = new Map(); PEOPLE.forEach(d => { if (!m.has(d.city)) m.set(d.city, { lon: d.lon, lat: d.lat, country: d.country, ps: [] }); m.get(d.city).ps.push(d); }); return [...m.values()]; })();
+const COUNTRIES = groupsOf('country').map(([k, ps]) => ({ key: k, ps, ...mean(ps) }));
+
+let rot = [-20, -18], zoom = 1, side = 300, dpr = 1, R = 140, cx = 150, cy = 150;
+let tween = null, held = false, over = false, dragging = null, t0 = performance.now(), last = t0;
+
+new ResizeObserver(([e]) => {
+  const r = e.contentRect; side = Math.max(120, Math.floor(Math.min(r.width * (wide.matches || cur ? 1 : 1.1), r.height) - 8));   // 폰에선 양옆을 조금 잘라 지구를 키운다
+  dpr = Math.min(2, devicePixelRatio || 1);
+  cv.style.width = cv.style.height = side + 'px'; cv.width = cv.height = Math.round(side * dpr);
+}).observe(stage);
+
+function p3(lonR, cosLat, sinLat, cl, sl, cp, sp) {
+  const cosL = Math.cos(lonR), sinL = Math.sin(lonR);
+  const lc = cosL * cl - sinL * sl, ls = sinL * cl + cosL * sl;
+  const x = cosLat * lc, y = cosLat * ls, z = sinLat;
+  return [y, z * cp + x * sp, x * cp - z * sp];   // 화면 x, 화면 위쪽 y, 깊이 — d3 rotate([λ, φ]) 와 같은 식
+}
+function screen(lon, lat) {
+  const cl = Math.cos(rot[0] * RAD), sl = Math.sin(rot[0] * RAD), cp = Math.cos(rot[1] * RAD), sp = Math.sin(rot[1] * RAD);
+  const [a, b, dep] = p3(lon * RAD, Math.cos(lat * RAD), Math.sin(lat * RAD), cl, sl, cp, sp);
+  return { x: cx + R * a, y: cy - R * b, d: dep };
+}
+
+let hits = [];
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  const t = (now - t0) / 1000, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (tween) {
+    const k = Math.min(1, (now - tween.s) / tween.dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    rot = [tween.a[0] + tween.dl * e, tween.a[1] + (tween.b[1] - tween.a[1]) * e];
+    if (k >= 1) tween = null;
+  } else if (!held && !over && !dragging && !reduce) rot[0] += dt * 4;   // 90초에 한 바퀴
+
+  const W = cv.width; cx = W / 2; cy = W / 2; R = W / 2 * .92 * zoom;
+  proj.scale(R).translate([cx, cy]).rotate(rot);
+  g.clearRect(0, 0, W, W);
+  g.lineWidth = dpr; g.strokeStyle = C.ink; g.globalAlpha = .55; g.beginPath(); path({ type: 'Sphere' }); g.stroke();
+  g.globalAlpha = .1; g.beginPath(); path(grat); g.stroke();
+
+  const cl = Math.cos(rot[0] * RAD), sl = Math.sin(rot[0] * RAD), cp = Math.cos(rot[1] * RAD), sp = Math.sin(rot[1] * RAD);
+  const ds = Math.max(1, (side < 260 ? .9 : 1.15) * dpr * Math.sqrt(zoom)), appear = reduce ? 1 : Math.min(1, t / 1.8);
+  g.fillStyle = C.ink;
+  for (let i = 0; i < DOTS.length; i += 3) {
+    const [a, b, dep] = p3(DOTS[i], DOTS[i + 1], DOTS[i + 2], cl, sl, cp, sp);
+    if (dep <= .02) continue;
+    g.globalAlpha = (.18 + .7 * dep) * appear;
+    g.fillRect(cx + R * a - ds / 2, cy - R * b - ds / 2, ds, ds);
+  }
+
+  // 여정 선 — 만난 순서대로, 처음 몇 초에 걸쳐 그어진다
+  const coords = PEOPLE.map(d => [d.lon, d.lat]);
+  const prog = reduce ? coords.length - 1 : Math.max(0, Math.min(1, (t - 1.2) / 3.2)) * (coords.length - 1);
+  const part = coords.slice(0, Math.floor(prog) + 1);
+  if (Math.floor(prog) < coords.length - 1) part.push(d3.geoInterpolate(coords[Math.floor(prog)], coords[Math.floor(prog) + 1])(prog % 1));
+  if (part.length > 1) { g.globalAlpha = .7; g.strokeStyle = C.mag; g.lineWidth = 1.2 * dpr; g.setLineDash([2 * dpr, 4 * dpr]); g.beginPath(); path({ type: 'LineString', coordinates: part }); g.stroke(); g.setLineDash([]); }
+
+  const show = reduce ? 1 : Math.max(0, Math.min(1, (t - 1.6) / 1.4));
+  const curD = cur ? cur.list[cur.i] : null;
+  hits = [];
+  // 도시 점
+  for (const c of CITIES) {
+    const s = screen(c.lon, c.lat); if (s.d <= .05) continue;
+    const on = !filter || c.ps.some(matches);
+    g.globalAlpha = (on ? 1 : .22) * Math.min(1, s.d * 3) * show; g.fillStyle = C.mag;
+    g.beginPath(); g.arc(s.x, s.y, 2.8 * dpr, 0, 7); g.fill();
+    if ((curD && c.ps.includes(curD)) || hoverKey === c.country) { g.strokeStyle = C.mag; g.lineWidth = dpr; g.beginPath(); g.arc(s.x, s.y, 8 * dpr, 0, 7); g.stroke(); }
+    if (on) hits.push({ x: s.x, y: s.y, r: 16 * dpr, d: c.ps.find(matches) || c.ps[0] });
+  }
+  // 나라 이름표 — 지도식 후광 글씨, 사람 수는 작게. 정면에 가까운 것부터, 겹치면 생략
+  const fs = (side < 260 ? 12 : 13.5) * dpr, boxes = [];
+  const vis = COUNTRIES.map(c => ({ c, s: screen(c.lon, c.lat) })).filter(o => o.s.d > .12).sort((a, b) => b.s.d - a.s.d);
+  g.textBaseline = 'alphabetic'; g.lineJoin = 'round';
+  for (const { c, s } of vis) {
+    const on = !filter || c.ps.some(matches);
+    const name = T().country(c.key), n = String(c.ps.length);
+    g.font = `600 ${fs}px Hahmlet, 'Noto Serif KR', serif`; const w1 = g.measureText(name).width;
+    g.font = `400 ${fs * .78}px Hahmlet, 'Noto Serif KR', serif`; const w2 = g.measureText(n).width;
+    const x = s.x + 7 * dpr, y = s.y - 7 * dpr, box = { x, y: y - fs, w: w1 + w2 + 3 * dpr, h: fs + 3 * dpr };
+    if (boxes.some(o => box.x < o.x + o.w && box.x + box.w > o.x && box.y < o.y + o.h && box.y + box.h > o.y)) continue;
+    boxes.push(box);
+    g.globalAlpha = (on ? 1 : .3) * Math.min(1, (s.d - .12) * 4) * show;
+    g.lineWidth = 4 * dpr; g.strokeStyle = C.paper; g.fillStyle = C.ink;
+    g.font = `600 ${fs}px Hahmlet, 'Noto Serif KR', serif`; g.strokeText(name, x, y); g.fillText(name, x, y);
+    g.font = `400 ${fs * .78}px Hahmlet, 'Noto Serif KR', serif`; g.fillStyle = C['ink-soft']; g.strokeText(n, x + w1 + 3 * dpr, y - fs * .32); g.fillText(n, x + w1 + 3 * dpr, y - fs * .32);
+    if (on) hits.push({ box, d: c.ps.find(matches) || c.ps[0] });
+  }
+  g.globalAlpha = 1;
+  requestAnimationFrame(frame);
+}
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(frame));
+
+function focusGlobe(p, hold) {
+  held = hold;
+  const a = rot.slice(), b = [-p.lon, Math.max(-50, Math.min(50, -p.lat))];
+  tween = { a, b, dl: ((b[0] - a[0]) % 360 + 540) % 360 - 180, s: performance.now(), dur: 1600 };
+  if (!hold) setTimeout(() => { if (!cur) held = false; }, 1700);
+}
+
+function hitAt(ev) {
+  const r = cv.getBoundingClientRect(), k = cv.width / r.width, x = (ev.clientX - r.left) * k, y = (ev.clientY - r.top) * k;
+  let best = null, bd = Infinity;
+  for (const h of hits) {
+    if (h.box) { if (x >= h.box.x - 6 && x <= h.box.x + h.box.w + 6 && y >= h.box.y - 6 && y <= h.box.y + h.box.h + 6) return h.d; continue; }
+    const dd = Math.hypot(h.x - x, h.y - y); if (dd < h.r && dd < bd) { bd = dd; best = h.d; }
+  }
+  return best;
+}
+function hideHint() { $('hint').classList.add('gone'); }
+cv.addEventListener('pointerdown', e => { dragging = { x: e.clientX, y: e.clientY, r: rot.slice(), moved: false, id: e.pointerId }; tween = null; });
+cv.addEventListener('pointermove', e => {
+  if (!dragging) { cv.style.cursor = hitAt(e) ? 'pointer' : ''; return; }
+  const dx = e.clientX - dragging.x, dy = e.clientY - dragging.y;
+  if (!dragging.moved && Math.hypot(dx, dy) > 5) { dragging.moved = true; cv.setPointerCapture(dragging.id); cv.classList.add('drag'); hideHint(); }
+  if (dragging.moved) { const k = 180 / (cv.getBoundingClientRect().width / 2 * .92 * zoom) / Math.PI; rot = [dragging.r[0] + dx * k, Math.max(-70, Math.min(70, dragging.r[1] - dy * k))]; }
+});
+cv.addEventListener('pointerup', e => {
+  if (!dragging) return;
+  if (!dragging.moved) { const d = hitAt(e); if (d) openPerson(d, listFor(d)); }
+  dragging = null; cv.classList.remove('drag');
+});
+cv.addEventListener('pointercancel', () => { dragging = null; cv.classList.remove('drag'); });
+cv.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') over = true; });
+cv.addEventListener('pointerleave', () => { over = false; });
+// 휠: 핀치(ctrl+휠)는 확대, 두 손가락 쓸기는 회전 — 한 화면 앱이라 페이지 스크롤과 다투지 않는다
+cv.addEventListener('wheel', e => {
+  e.preventDefault(); tween = null;
+  if (e.ctrlKey) { zoom = Math.max(1, Math.min(2.4, zoom * Math.exp(-e.deltaY * .01))); return; }
+  const k = 180 / (cv.getBoundingClientRect().width / 2 * .92 * zoom) / Math.PI * .6;
+  rot = [rot[0] - e.deltaX * k, Math.max(-70, Math.min(70, rot[1] + e.deltaY * k))]; hideHint();
+}, { passive: false });
+
+/* ---------- 점묘 초상 — 셀카 그림 자리 ---------- */
+function drawPortrait(d) {
+  const c = $('lfPic'), x = c.getContext('2d'), W = c.width;
+  const oc = document.createElement('canvas'); oc.width = oc.height = W; const o = oc.getContext('2d');
+  const L = d.look || {}, hw = L.style === 'long' ? .3 : L.style === 'curly' ? .33 : .26;
+  o.fillStyle = '#f00'; o.beginPath(); o.ellipse(W * .5, W * .4, W * hw, W * (hw + .04), 0, 0, 7); o.fill();
+  if (L.style === 'long') o.fillRect(W * .22, W * .4, W * .56, W * .32);
+  o.fillStyle = '#00f'; o.beginPath(); o.ellipse(W * .5, W * 1.04, W * .44, W * .3, 0, 0, 7); o.fill();
+  o.fillStyle = '#0f0'; o.beginPath(); o.ellipse(W * .5, W * .45, W * .17, W * .22, 0, 0, 7); o.fill();
+  const px = o.getImageData(0, 0, W, W).data;
+  let s = d.id * 9301 + 49297; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  x.clearRect(0, 0, W, W);
+  for (let i = 0; i < 2600; i++) {
+    const X = rnd() * W, Y = rnd() * W, p = ((Y | 0) * W + (X | 0)) * 4;
+    if (!px[p + 3]) continue;
+    const face = px[p + 1] > 200, shirt = px[p + 2] > 200;
+    if (face && rnd() > .2) continue;
+    x.globalAlpha = shirt ? .9 : .75; x.fillStyle = shirt ? (L.top || C.ink) : C.ink;
+    x.fillRect(X, Y, 2.4, 2.4);
+  }
+  x.globalAlpha = 1;
+}
+
+/* ---------- 종이 결 ---------- */
+(() => { const n = document.createElement('canvas'); n.width = n.height = 160; const c = n.getContext('2d'), im = c.createImageData(160, 160);
+  for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+  c.putImageData(im, 0, 0); document.documentElement.style.setProperty('--grain', `url(${n.toDataURL()})`); })();
+
+/* ---------- 시작 ---------- */
+renderStatic();
+const m = /^#p(\d+)$/.exec(location.hash);
+if (m) { const d = STARS.find(x => x.id === +m[1]); if (d) openPerson(d, listFor(d)); }
+})();
+</script>
+
+<!-- ─────────────────────────────────────────────────────────────
+     방문 수집 비콘 — 새 웹앱을 만들면 </body> 바로 위에 이걸 붙인다.
+     고칠 곳은 SITE 한 줄뿐이다. GAS 는 건드릴 필요 없다.
+     단일 출처: ~/webstats/beacon.template.js  (여기를 고치면 전 사이트에 반영할 것)
+     ───────────────────────────────────────────────────────────── -->
+<script>
+(function(){
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycby6J7xGChz7atOL6sVnbiWui8Z1lXVjeF8WUGTj3MXNgEn7EioTz8xZXb522vkAxkgeXA/exec';
+  var SITE = 'footnotes';
+  try {
+    if (location.search.indexOf('owner=1') !== -1) {
+      localStorage.setItem('__is_owner__', '1');            /* 내 방문은 이후 영구 제외 */
+    } else if (localStorage.getItem('__is_owner__') !== '1'
+               && location.protocol !== 'file:'             /* 로컬 헤드리스 테스트 차단 */
+               && location.hostname !== 'localhost'
+               && location.hostname !== '127.0.0.1') {
+      /* 해시 라우팅(#/p/<id>) — 사람별 링크도 기록하되 한 세션에 같은 라우트는 한 번만(portfolio 와 같은 형태) */
+      var seen = {};
+      var hit = function () {
+        var key = location.pathname + location.hash;
+        if (seen[key]) return;
+        seen[key] = 1;
+        var img = new Image();
+        img.src = WEBAPP_URL
+          + '?t=pv&s=' + encodeURIComponent(SITE)
+          + '&p=' + encodeURIComponent(location.pathname + location.hash)
+          + '&r=' + encodeURIComponent(document.referrer || 'direct')
+          + '&v=' + encodeURIComponent(vid());
+      };
+      hit();
+      window.addEventListener('hashchange', hit);
+    }
+  } catch (e) {}
+
+  /* 익명 방문자 ID. 사람 단위로 세기 위한 것으로, IP·개인정보는 수집하지 않는다.
+     이게 없으면 '몇 명'이 아니라 '페이지뷰 몇 건'밖에 셀 수 없다. */
+  function vid(){
+    try {
+      var k = '__vid__', v = localStorage.getItem(k);
+      if (!v) { v = Math.random().toString(36).slice(2) + Date.now().toString(36);
+                localStorage.setItem(k, v); }
+      return v;
+    } catch (e) { return ''; }
+  }
+})();
+</script>
+</body>
+</html>

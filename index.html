@@ -457,7 +457,7 @@ $('lfShare').onclick = async () => {
   }
 };
 addEventListener('keydown', e => {
-  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (e.key !== 'Escape' && e.target.closest && e.target.closest('input[type="text"], textarea')) return;   // 글자 칸의 화살표는 커서용 — Esc 와 체크박스는 그대로
   if (e.key === 'Escape') { if (cur) closeLeaf(); else if ($('cat').classList.contains('open')) openCat(false); }
   else if (cur && e.key === 'ArrowRight') step(1);
   else if (cur && e.key === 'ArrowLeft') step(-1);

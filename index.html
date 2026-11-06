@@ -59,7 +59,7 @@ a { color: inherit; }
 @keyframes settle { from { opacity: 0; } }
 
 /* 무대 */
-.stage { grid-area: stage; position: relative; display: grid; place-items: center; min-height: 0; overflow: hidden; transition: padding 900ms var(--ease); }
+.stage { grid-area: stage; position: relative; display: grid; place-items: center; min-height: 0; overflow: hidden; transition: padding 900ms var(--ease), margin 900ms var(--ease); }
 #globe { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block; cursor: grab; touch-action: none; }
 #globe.drag { cursor: grabbing; }
 .hint { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 6px; margin: 0; font-size: 14px; color: var(--ink-soft); transition: opacity 1200ms var(--ease); pointer-events: none; }
@@ -151,7 +151,7 @@ a { color: inherit; }
   #catToggle { display: none; }
   .tabs { border-bottom: 1px solid var(--rule); }
   #leaf { top: 0; bottom: 0; right: 0; width: var(--leafW); border-left: 1px solid var(--rule); }
-  .app.reading .stage { padding-right: var(--leafW); }
+  .app.reading .stage { margin-right: var(--leafW); }   /* margin, not padding: the globe is centred absolutely, which ignores padding and left it under the leaf */
   .lbar, .lbody { padding-left: 32px; padding-right: max(32px, env(safe-area-inset-right, 0px)); }
   .lhead { grid-template-columns: minmax(0, 1fr) 104px; }
   #lfPic { width: 104px; height: 104px; }
@@ -400,11 +400,19 @@ function openPerson(d, l) {
   app.classList.add('reading');
   if (!was) { leaf.hidden = false; requestAnimationFrame(() => leaf.classList.add('on')); fillLeaf(false); leaf.scrollTop = 0; $('lfClose').focus({ preventScroll: true }); }
   else fillLeaf(true);
-  try { history.replaceState(null, '', '#p' + d.id); } catch (e) {}
+  // 처음 열 때는 기록을 하나 쌓는다 — 폰의 뒤로 가기가 사이트를 떠나지 않고 이 면을 닫게
+  try { if (!was && location.hash !== '#p' + d.id) { history.pushState({ leaf: 1 }, '', '#p' + d.id); pushed = true; } else history.replaceState(history.state, '', '#p' + d.id); } catch (e) {}
   focusGlobe(d, true); hideHint();
 }
+let pushed = false;
+addEventListener('popstate', () => {
+  pushed = false;
+  const m = /^#p(\d+)$/.exec(location.hash), d = m && STARS.find(x => x.id === +m[1]);
+  if (d) openPerson(d, listFor(d)); else closeLeaf();
+});
 function closeLeaf() {
   if (!cur) return;
+  if (pushed) { pushed = false; history.back(); return; }   // popstate 가 마저 닫는다
   cur = null; leaf.classList.remove('on'); app.classList.remove('reading');
   setTimeout(() => { if (!cur) leaf.hidden = true; }, 900);
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -443,9 +451,13 @@ $('lfShare').onclick = async () => {
   const d = cur.list[cur.i];
   const url = `${/github\.io$/.test(location.hostname) ? location.origin + location.pathname : ARTIFACT_URL}#p${d.id}`;
   try { await navigator.clipboard.writeText(url); toast(T().copied); }
-  catch (e) { toast(T().copyFail + url); }
+  catch (e) {
+    if (navigator.share) { try { await navigator.share({ url }); return; } catch (er) { if (er.name === 'AbortError') return; } }
+    toast(T().copyFail + url, 8000);
+  }
 };
 addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
   if (e.key === 'Escape') { if (cur) closeLeaf(); else if ($('cat').classList.contains('open')) openCat(false); }
   else if (cur && e.key === 'ArrowRight') step(1);
   else if (cur && e.key === 'ArrowLeft') step(-1);
@@ -455,7 +467,7 @@ addEventListener('keydown', e => {
   leaf.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
     if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) step(dx < 0 ? 1 : -1); }, { passive: true });
 })();
-let toastT; function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2600); }
+let toastT; function toast(t, ms = 2600) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), ms); }
 
 $('letter').addEventListener('submit', e => {
   e.preventDefault();
@@ -478,6 +490,8 @@ $('join').addEventListener('click', e => {
   $('letter').scrollIntoView({ block: 'center', behavior: 'smooth' });
   $('handle').focus({ preventScroll: true });
 });
+
+renderStatic();   // 지구본 라이브러리(CDN)가 막혀도 글·목록·신청 칸은 먼저 보이게 — 아래에서 d3 가 없으면 여기서 멈춘다
 
 /* ---------- 색 토큰 ---------- */
 let C = {};
